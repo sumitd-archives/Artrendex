@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>D3test</title>
+        <script src="http://d3js.org/d3.v2.js"></script>
+
+    </head>
+    <body>
+        <script>
+            var width = 1270;
+            var height = 630;
+            var img_w = 20;
+            var img_h = 20;
+            var centered = null;
+
+            d3.json("test.json", function(data) {
+                var plot_width = 750
+                var plot_height= 600
+                dataset = data;
+                var xAxisScale = d3.scale.linear().range([0, plot_width]);
+                var yAxisScale = d3.scale.linear().range([plot_height, 0]);
+                var colorScale = d3.scale.linear().range([d3.rgb("#007AFF"), d3.rgb('#FFF500')]);
+                xAxisScale.domain(d3.extent(dataset, function(d){return d[0][0]}));
+                yAxisScale.domain(d3.extent(dataset, function(d){return d[0][1]}));
+                colorScale.domain(d3.extent(dataset, function(d){return d[2]}));
+                var canvas = d3.select("body")
+                    .append("svg")
+                    .attr("id", "outer_canvas")
+                    .attr("width", width)
+                    .attr("height", height)
+                    .style("border", "1px solid black")
+                   /* .on("click", function() {
+                        d3.select("#inner_canvas").remove();
+                        d3.select("#main_img").remove();
+                     })*/
+                var plots = canvas.append("g")
+                .call(d3.behavior.zoom().scaleExtent([0.1, 200]).on("zoom", function(){
+                    plots.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")
+                    }))
+                //DisplayImages();
+                //function DisplayImages() {
+                var imgs = plots.selectAll("circle")
+                    .data(dataset)
+                    .enter().append("circle")
+                    .attr("cx", function(d) {return xAxisScale(d[0][0])})
+                    .attr("cy", function(d) {return yAxisScale(d[0][1])})
+                    .style("fill", function(d) {return colorScale(d[2])})
+                    .attr("r", 2)
+                    .on("click", handleClick)
+                    //.on("mouseout", handleMouseOut);
+
+                    function handleClick(d, i) {
+                        console.log(i);
+                        d3.select("#inner_canvas").remove();
+                        d3.select("#main_img").remove();
+                    var in_canvas = canvas.append("g")
+                               .attr("id" , "inner_canvas")
+                             .attr("transform", "translate(" + 780 + "," + 20 + ")")
+                    /*.call(d3.behavior.zoom().scaleExtent([0.1, 200]).on("zoom", function() {
+                    in_canvas.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")
+                    }))*/
+
+                    var rad = 200;
+                    var img_w = 100;
+                    var img_h = 100;
+                    var theta;
+
+                    d3.json("select10.json", function(data) {
+                    theta = 2*Math.PI/data.length;
+                    var images = in_canvas.selectAll("image")
+                        .data(data).enter().append("svg:image")
+                        .attr("xlink:href", function(d) {return "images/"+d[1]})
+                        .attr("x" , function(d, i) {return (rad + rad*Math.cos(i * theta));})
+                        .attr("y" , function(d, i) {return (rad + rad*Math.sin(i * theta));})
+                        .attr("width" , img_w)
+                        .attr("height" , img_h)
+                        .on("click", clicked);
+                    }) 
+
+                    var main_img = canvas.append("image")
+                        .attr("id" , "main_img")
+                        .attr("xlink:href", "images/"+d[1])
+                        .attr("x" , rad)
+                        .attr("y" , rad)
+                        .attr("width" , img_w)
+                        .attr("height" , img_h)
+                        .attr("transform", "translate(" + 780 + "," + 20 + ")")
+                        .on("click", clicked_main);
+
+                    function clicked_main(d) {
+                        d3.select(this) 
+                        .attr("x", function(){
+                                if (d3.select(this).attr("width") == img_w) {
+                                    return 0;
+                                }
+                                return rad;
+                            })
+                        .attr("y", function(){
+                                if (d3.select(this).attr("width") == img_w) {
+                                    return 0;
+                                }
+                                return rad;
+                            })
+                        .attr("width" , function() {
+                            if (d3.select(this).attr("width") == img_w) {
+                                return img_w * 4
+                            }
+                            return img_w
+                        })
+                        .attr("height" , function() {
+                            if (d3.select(this).attr("height") == img_h) {
+                                return img_h * 4
+                            }
+                            return img_h
+                        })
+                    }
+
+                    function clicked(d, i) {
+                        d3.select(this) 
+                            .attr("x", function(){
+                                if (d3.select(this).attr("width") == img_w) {
+                                    return 0;
+                                }
+                                return (rad + rad*Math.cos(i * theta));
+                            })
+                            .attr("y", function(){
+                                if (d3.select(this).attr("width") == img_w) {
+                                    return 0;
+                                }
+                                return (rad + rad*Math.sin(i * theta));
+                            })
+                            .attr("width" , function() {
+                                if (d3.select(this).attr("width") == img_w) {
+                                    return img_w * 4
+                                }
+                                return img_w
+                            })
+                            .attr("height" , function() {
+                                if (d3.select(this).attr("height") == img_h) {
+                                    return img_h * 4
+                                }
+                                return img_h
+                            })
+                    }
+
+                }
+                function handleMouseOut(d, i) {
+                        d3.select("#inner_canvas").remove();
+                        d3.select("#main_img").remove();
+                }
+                /*function zoomFunction(){
+                    var panVector = d3.event.translate;
+                    var panX = panVector[0];
+                    var panY = panVector[1];
+                    var smultiply = d3.event.scale;
+                    var image = svg.selectAll("image")
+                    .attr("width", img_w*smultiply)
+                    .attr("height", img_h*smultiply)
+                    .attr("x", xAxisScale(data[0][0]))
+                    .attr("y", yAxisScale(data[0][1]));
+                }*/
+            })
+        </script>
+    </body>
+</html>

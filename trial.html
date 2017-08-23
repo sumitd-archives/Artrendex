@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>D3test</title>
+        <script src="http://d3js.org/d3.v2.js"></script>
+    </head>
+    <body>
+        <script>
+        
+            var d = [1,2,3,4,5,6,7,8,9,10];
+            var theta = 2*Math.PI/d.length;
+            var r = 200;
+            var zoomed = false;
+            var height = 800
+            var width = 800
+            var centered = null;
+            var canvas = d3.select("body").append("svg")
+                           .attr("width" , height)
+                           .attr("height", width)
+
+
+            var circle_grp = canvas.append("g")
+                           .attr("transform","translate(20,20)")
+            
+            circle_grp.selectAll("circle").data(d).enter()               
+                .append("circle")
+                .attr("cx", function(d,i) {return (r + r*Math.cos(i * theta));})
+                .attr("cy", function(d,i) {return (r + r*Math.sin(i * theta));})
+                .attr("r" , 10)
+                .style("fill", "red")
+                .on("click" , clicked)
+
+            circle_grp.append("circle")
+                .attr("cx" , 100)
+                .attr("cy" , 100)
+                .attr("r" , 10)
+                .style("fill", "red")
+
+            function clicked(d,i) {
+
+                if (d && centered != d) {
+                    x = d3.select(this).attr("cx");
+                    y = d3.select(this).attr("cy");
+                    k = 10;
+                    centered = d;
+                }
+                else {
+                    x = width/2;
+                    y = height/2;
+                    k = 1;
+                    centered = null;
+                }
+                circle_grp.transition()
+                    .duration(750)
+                    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+            }
+
+         </script>
+    </body>
+</html>
+
