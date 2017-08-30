@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>D3test</title>
+        <script src="http://d3js.org/d3.v2.js"></script>
+
+    </head>
+    <body>
+        <script>
+            var width = 1270;
+            var height = 630;
+            var img_w = 5;
+            var img_h = 5;
+            var centered = null;
+            var file = null;
+            var x;
+            var y;
+            var curr_x;
+            var curr_y;
+
+            d3.json("test.json", function(data) {
+                var plot_width = 750
+                var plot_height= 600
+                dataset = data;
+                var xAxisScale = d3.scale.linear().range([0, plot_width]);
+                var yAxisScale = d3.scale.linear().range([plot_height, 0]);
+                var colorScale = d3.scale.linear().range([d3.rgb("#007AFF"), d3.rgb('#FFF500')]);
+                xAxisScale.domain(d3.extent(dataset, function(d){return d[0][0]}));
+                yAxisScale.domain(d3.extent(dataset, function(d){return d[0][1]}));
+                colorScale.domain(d3.extent(dataset, function(d){return d[2]}));
+                var canvas = d3.select("body")
+                    .append("svg")
+                    .attr("id", "outer_canvas")
+                    .attr("width", width)
+                    .attr("height", height)
+                    .style("border", "1px solid black")
+                   /* .on("click", function() {
+                        d3.select("#inner_canvas").remove();
+                        d3.select("#main_img").remove();
+                     })*/
+                var plots = canvas.append("g")
+                .call(d3.behavior.zoom().scaleExtent([0.1, 200]).on("zoom", function(){
+                    plots.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")
+                    }))
+                var circles = plots.selectAll("circle")
+                    .data(dataset)
+                    .enter().append("circle")
+                    .attr("cx", function(d) {return xAxisScale(d[0][0])})
+                    .attr("cy", function(d) {return yAxisScale(d[0][1])})
+                    .style("fill", function(d) {return colorScale(d[2])})
+                    .attr("r", 2)
+                    .attr("id", function(d,i) {return "circle" + i})
+                    .on("click", handleClick)
+                    
+                    var images;
+                    function handleClick(d, i) {
+                        if (d && !centered) {
+                            file = "neighbours/point" + i + ".json";
+                            d3.select(this).style("fill" , "white")
+                            d3.json(file, function(data) {
+                                images = plots.selectAll("image")
+                                    .data(data).enter().append("svg:image")
+                                    .attr("xlink:href", function(d) {return "images/" + d[2]})
+                                    .attr("x", function(d) {console.log(d[1][0]);return xAxisScale(d[1][0])})
+                                    .attr("y", function(d) {console.log(d[1][1]);return yAxisScale(d[1][1])})
+                                    .attr("width", img_w)
+                                    .attr("height", img_h)
+                                    .attr("id", function(d,i) {return "img" + i})
+                                    .on("click", handleImgClick)
+
+                                for (var j = 0; j < data.length; j++) {
+                                    var c_index = data[j][0];
+                                    var img_name = data[j][1];
+                                    var target_cir = "#circle"+ c_index;
+                                    d3.select(target_cir).style("fill", "white");
+                                }
+                            })
+                            x = d3.select(this).attr("cx");
+                            y = d3.select(this).attr("cy");
+                            k = 10;
+                            centered = d3.select(this);
+                        }
+                        else {
+                            console.log(file);
+                            d3.json(file, function(data) {
+                                for (var j = 0; j < data.length; j++) {
+                                    var c_index = data[j][0];
+                                    var img_name = data[j][1];
+                                    var target_img = "#img"+ j;
+                                    var target_cir = "#circle"+(c_index);
+                                    d3.select(target_cir).style("fill", function(d) {return colorScale(d[2])})
+                                    d3.select(target_img).remove()
+                                }
+                            })
+                            centered.style("fill", function(d) {return colorScale(d[2])})
+                            x = plot_width/2;
+                            y = plot_height/2;
+                            k = 1;
+                            centered = null;
+                        }
+                        plots.transition()
+                            .duration(750)
+                            .attr("transform", "translate(" + plot_width / 2 + "," + plot_height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+                    }
+
+                function handleImgClick(d, i) {
+                        d3.select(this)
+                          .attr("x", function(){
+                              if(d3.select(this).attr("width") == img_w) {
+                                  curr_x = d3.select(this).attr("x");
+                                  return x - plot_width/40;
+                              }
+                              //return xAxisScale(d[1][0]);
+                              return curr_x;
+                          })
+                          .attr("y", function(){
+                              if(d3.select(this).attr("width") == img_h) {
+                                  curr_y = d3.select(this).attr("y");
+                                  return y - plot_width/40;
+                              }
+                              //return xAxisScale(d[1][1]);
+                              return curr_y;
+                          })
+                          .attr("width", function(){
+                              if(d3.select(this).attr("width") == img_w) {
+                                  return img_w * 10
+                              }
+                              return img_w;
+                          })
+                          .attr("height", function(){
+                              if(d3.select(this).attr("height") == img_h) {
+                                  return img_h * 10
+                              }
+                              return img_h;
+                          })
+                }
+                /*function zoomFunction(){
+                    var panVector = d3.event.translate;
+                    var panX = panVector[0];
+                    var panY = panVector[1];
+                    var smultiply = d3.event.scale;
+                    var image = svg.selectAll("image")
+                    .attr("width", img_w*smultiply)
+                    .attr("height", img_h*smultiply)
+                    .attr("x", xAxisScale(data[0][0]))
+                    .attr("y", yAxisScale(data[0][1]));
+                }*/
+            })
+        </script>
+    </body>
+</html>
