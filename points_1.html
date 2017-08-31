@@ -17,6 +17,7 @@
             var y;
             var curr_x;
             var curr_y;
+            var scale;
 
             d3.json("test.json", function(data) {
                 var plot_width = 750
@@ -61,8 +62,8 @@
                                 images = plots.selectAll("image")
                                     .data(data).enter().append("svg:image")
                                     .attr("xlink:href", function(d) {return "images/" + d[2]})
-                                    .attr("x", function(d) {console.log(d[1][0]);return xAxisScale(d[1][0])})
-                                    .attr("y", function(d) {console.log(d[1][1]);return yAxisScale(d[1][1])})
+                                    .attr("x", function(d) {return xAxisScale(d[1][0])})
+                                    .attr("y", function(d) {return yAxisScale(d[1][1])})
                                     .attr("width", img_w)
                                     .attr("height", img_h)
                                     .attr("id", function(d,i) {return "img" + i})
@@ -77,11 +78,10 @@
                             })
                             x = d3.select(this).attr("cx");
                             y = d3.select(this).attr("cy");
-                            k = 10;
+                            scale = 10;
                             centered = d3.select(this);
                         }
                         else {
-                            console.log(file);
                             d3.json(file, function(data) {
                                 for (var j = 0; j < data.length; j++) {
                                     var c_index = data[j][0];
@@ -95,45 +95,39 @@
                             centered.style("fill", function(d) {return colorScale(d[2])})
                             x = plot_width/2;
                             y = plot_height/2;
-                            k = 1;
+                            scale = 1;
                             centered = null;
                         }
                         plots.transition()
                             .duration(750)
-                            .attr("transform", "translate(" + plot_width / 2 + "," + plot_height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+                            .attr("transform", "translate(" + plot_width / 2 + "," + plot_height / 2 + ")scale(" + scale + ")translate(" + -x + "," + -y + ")")
                     }
 
                 function handleImgClick(d, i) {
-                        d3.select(this)
-                          .attr("x", function(){
-                              if(d3.select(this).attr("width") == img_w) {
-                                  curr_x = d3.select(this).attr("x");
-                                  return x - plot_width/40;
-                              }
-                              //return xAxisScale(d[1][0]);
-                              return curr_x;
-                          })
-                          .attr("y", function(){
-                              if(d3.select(this).attr("width") == img_h) {
-                                  curr_y = d3.select(this).attr("y");
-                                  return y - plot_width/40;
-                              }
-                              //return xAxisScale(d[1][1]);
-                              return curr_y;
-                          })
-                          .attr("width", function(){
-                              if(d3.select(this).attr("width") == img_w) {
-                                  return img_w * 10
-                              }
-                              return img_w;
-                          })
-                          .attr("height", function(){
-                              if(d3.select(this).attr("height") == img_h) {
-                                  return img_h * 10
-                              }
-                              return img_h;
-                          })
-                }
+                        console.log("d : " + d);
+                        var x_val = xAxisScale(d[1][0]);
+                        var y_val = yAxisScale(d[1][1]);
+                        var width_val = img_w;
+                        var height_val = img_h;
+                        var target_img = "#img"+ i;
+                        console.log("select this : " + d3.select(target_img))
+                        if (d3.select(target_img).attr("width") == img_w) {
+                            x_val = x - plot_width/(2.1*scale);
+                            y_val = y - plot_height/(2.1*scale);
+                            width_val = img_w*18;
+                            height_val = img_h*12;
+                        }
+                        d3.select(target_img).remove();
+                        plots.append("svg:image")
+                            .attr("xlink:href", "images/" + d[2])
+                            .attr("x", x_val)
+                            .attr("y", y_val)
+                            .attr("width", width_val)
+                            .attr("height", height_val)
+                            .attr("id", "img" + i)
+                .on("click", function() {
+                    handleImgClick(d,i);
+                })}
                 /*function zoomFunction(){
                     var panVector = d3.event.translate;
                     var panX = panVector[0];
